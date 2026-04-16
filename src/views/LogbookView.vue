@@ -84,6 +84,7 @@
           <tr class="border-b border-[#334155] bg-[#0f172a]/40">
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide w-8">#</th>
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Nama Kegiatan</th>
+            <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Volume</th>
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Tanggal</th>
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Pemberi Tugas</th>
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Dokumentasi</th>
@@ -99,6 +100,13 @@
             <td class="px-5 py-3.5 text-slate-600 font-mono text-xs">{{ i + 1 }}</td>
             <td class="px-5 py-3.5 text-slate-200 font-medium max-w-[220px]">
               <span class="line-clamp-1">{{ item.nama_kegiatan }}</span>
+            </td>
+            <td class="px-5 py-3.5 text-slate-400 text-xs whitespace-nowrap">
+              <span v-if="item.volume" class="inline-flex items-center gap-1">
+                <span class="text-slate-200 font-mono font-medium">{{ item.volume }}</span>
+                <span class="text-slate-500">{{ item.satuan }}</span>
+              </span>
+              <span v-else class="text-slate-700">—</span>
             </td>
             <td class="px-5 py-3.5 text-slate-400 font-mono text-xs whitespace-nowrap">{{ formatDate(item.tanggal) }}</td>
             <td class="px-5 py-3.5">
@@ -175,6 +183,9 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-xs font-mono text-slate-500 bg-[#0f172a] px-2 py-1 rounded-lg">{{ formatDate(item.tanggal) }}</span>
+          <span v-if="item.volume" class="text-xs bg-violet-500/10 text-violet-400 border border-violet-500/20 px-2.5 py-1 rounded-full">
+            {{ item.volume }} {{ item.satuan }}
+          </span>
           <span class="inline-flex items-center bg-sky-500/10 text-sky-400 text-xs px-2.5 py-1 rounded-full border border-sky-500/20">{{ item.pemberi_tugas }}</span>
           <a v-if="item.dokumentasi_url" :href="item.dokumentasi_url" target="_blank"
             class="inline-flex items-center gap-1 bg-orange-500/10 text-orange-400 text-xs px-2.5 py-1 rounded-full border border-orange-500/20">
@@ -245,7 +256,64 @@
               <p v-if="assignersLoading" class="text-xs text-slate-600">Memuat daftar pemberi tugas…</p>
             </div>
 
-            <!-- Upload Foto -->
+            <!-- Volume & Satuan -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="text-xs font-medium text-slate-400 uppercase tracking-wide">Volume</label>
+                <input
+                  v-model="form.volume"
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="Contoh: 10"
+                  class="w-full bg-[#0f172a] border border-[#334155] focus:border-sky-500 text-slate-200 text-sm rounded-xl px-4 py-2.5 outline-none transition placeholder:text-slate-600"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-medium text-slate-400 uppercase tracking-wide">Satuan</label>
+                <select
+                  v-model="form.satuan"
+                  @change="onSatuanChange(form.satuan)"
+                  class="w-full bg-[#0f172a] border border-[#334155] focus:border-sky-500 text-slate-200 text-sm rounded-xl px-4 py-2.5 outline-none transition cursor-pointer"
+                >
+                  <option value="">Pilih satuan…</option>
+                  <option v-for="s in satuanList" :key="s.nama" :value="s.nama">{{ s.nama }}</option>
+                  <option value="__add_new__" class="text-sky-400">+ Tambah satuan lain…</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Tambah Satuan Baru -->
+            <div v-if="showAddSatuan" class="bg-[#0f172a] border border-sky-500/30 rounded-xl p-3 space-y-2">
+              <p class="text-xs text-sky-400 font-medium">Tambah satuan baru</p>
+              <div class="flex gap-2">
+                <input
+                  v-model="newSatuanName"
+                  type="text"
+                  placeholder="Nama satuan…"
+                  @keyup.enter="addSatuan"
+                  class="flex-1 bg-[#1e293b] border border-[#334155] focus:border-sky-500 text-slate-200 text-sm rounded-xl px-3 py-2 outline-none transition placeholder:text-slate-600"
+                />
+                <button
+                  @click="addSatuan"
+                  :disabled="addSatuanLoading"
+                  class="inline-flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white text-sm font-semibold px-3 py-2 rounded-xl transition"
+                >
+                  <div v-if="addSatuanLoading" class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <svg v-else class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Tambah
+                </button>
+                <button
+                  @click="showAddSatuan = false; newSatuanName = ''; addSatuanError = ''"
+                  class="px-3 py-2 text-sm text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-xl transition"
+                >
+                  Batal
+                </button>
+              </div>
+              <p v-if="addSatuanError" class="text-xs text-red-400">{{ addSatuanError }}</p>
+            </div>
             <div class="space-y-1.5">
               <label class="text-xs font-medium text-slate-400 uppercase tracking-wide">Dokumentasi (Foto)</label>
 
@@ -392,11 +460,12 @@
 import { ref, computed, onMounted } from "vue";
 import { useApi } from "../composables/useApi.js";
 
-const { getLogbook, getAssigners, createLogbook, updateLogbook, deleteLogbook, uploadFileAndCreate, uploadFileAndUpdate } = useApi();
+const { getLogbook, getAssigners, getSatuan, createSatuan, createLogbook, updateLogbook, deleteLogbook, uploadFileAndCreate, uploadFileAndUpdate } = useApi();
 
 // ── State ──
 const logbook = ref([]);
 const assigners = ref([]);
+const satuanList = ref([]);
 const loading = ref(true);
 const assignersLoading = ref(true);
 
@@ -411,6 +480,11 @@ const deleteTarget = ref(null);
 const submitting = ref(false);
 const formError = ref("");
 
+const showAddSatuan = ref(false);
+const newSatuanName = ref("");
+const addSatuanLoading = ref(false);
+const addSatuanError = ref("");
+
 const newFile = ref(null);
 const newFilePreview = ref("");
 const fileInput = ref(null);
@@ -422,6 +496,8 @@ const form = ref({
   nama_kegiatan: "",
   tanggal: "",
   pemberi_tugas: "",
+  volume: "",
+  satuan: "",
   dokumentasi_url: "",
 });
 
@@ -468,10 +544,12 @@ function resetFilter() {
 
 function openCreate() {
   isEditing.value = false;
-  form.value = { id: "", nama_kegiatan: "", tanggal: new Date().toISOString().split("T")[0], pemberi_tugas: "", dokumentasi_url: "" };
+  form.value = { id: "", nama_kegiatan: "", tanggal: new Date().toISOString().split("T")[0], pemberi_tugas: "", volume: "", satuan: "", dokumentasi_url: "" };
   newFile.value = null;
   newFilePreview.value = "";
   formError.value = "";
+  showAddSatuan.value = false;
+  newSatuanName.value = "";
   showModal.value = true;
 }
 
@@ -481,6 +559,8 @@ function openEdit(item) {
   newFile.value = null;
   newFilePreview.value = "";
   formError.value = "";
+  showAddSatuan.value = false;
+  newSatuanName.value = "";
   showModal.value = true;
 }
 
@@ -568,19 +648,59 @@ async function submitForm() {
   }
 }
 
-async function executeDelete() {
-  submitting.value = true;
+async function addSatuan() {
+  const nama = newSatuanName.value.trim();
+  if (!nama) { addSatuanError.value = "Nama satuan tidak boleh kosong"; return; }
+  if (satuanList.value.some(s => s.nama.toLowerCase() === nama.toLowerCase())) {
+    addSatuanError.value = "Satuan sudah ada";
+    return;
+  }
+  addSatuanLoading.value = true;
+  addSatuanError.value = "";
   try {
-    await deleteLogbook(deleteTarget.value.id);
-    logbook.value = logbook.value.filter((i) => i.id !== deleteTarget.value.id);
-    showDeleteModal.value = false;
-    showToast("Kegiatan berhasil dihapus", "success");
+    await createSatuan(nama);
+    satuanList.value.push({ nama });
+    form.value.satuan = nama;
+    showAddSatuan.value = false;
+    newSatuanName.value = "";
   } catch (e) {
-    showToast(e.message || "Gagal menghapus", "error");
+    addSatuanError.value = e.message || "Gagal menambah satuan";
   } finally {
-    submitting.value = false;
+    addSatuanLoading.value = false;
   }
 }
+
+function onSatuanChange(val) {
+  if (val === "__add_new__") {
+    form.value.satuan = "";
+    showAddSatuan.value = true;
+  } else {
+    showAddSatuan.value = false;
+  }
+}
+
+// async function deleteLogbook() {
+//   // Guard clause: pastikan ada target yang akan dihapus
+//   if (!deleteTarget.value) return;
+
+//   submitting.value = true;
+//   try {
+//     await deleteLogbook(deleteTarget.value.id);
+    
+//     // Update state lokal setelah berhasil hapus di API
+//     logbook.value = logbook.value.filter((i) => i.id !== deleteTarget.value.id);
+    
+//     showDeleteModal.value = false;
+//     showToast("Kegiatan berhasil dihapus", "success");
+    
+//     // Reset target delete setelah selesai
+//     deleteTarget.value = null;
+//   } catch (e) {
+//     showToast(e.message || "Gagal menghapus", "error");
+//   } finally {
+//     submitting.value = false;
+//   }
+// }
 
 function showToast(message, type = "success") {
   toast.value = { show: true, message, type };
@@ -590,7 +710,7 @@ function showToast(message, type = "success") {
 // ── Lifecycle ──
 onMounted(async () => {
   try {
-    [logbook.value, assigners.value] = await Promise.all([getLogbook(), getAssigners()]);
+    [logbook.value, assigners.value, satuanList.value] = await Promise.all([getLogbook(), getAssigners(), getSatuan()]);
     assignersLoading.value = false;
   } catch (e) {
     showToast("Gagal memuat data: " + e.message, "error");

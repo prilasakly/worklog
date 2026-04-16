@@ -69,7 +69,6 @@ function fileToBase64(file) {
 // ─── API Functions ─────────────────────────────────────────
 export function useApi() {
 	// ── LOGBOOK ──────────────────────────────────────────────
-
 	async function getLogbook() {
 		return get("getLogbook");
 	}
@@ -122,6 +121,20 @@ export function useApi() {
 		}
 	}
 
+	// ── SATUAN (TAMBAHAN BARU) ──────────────────────────────
+
+	async function getSatuan() {
+		return get("getSatuan");
+	}
+
+	async function createSatuan(namaSatuan) {
+		// Karena di GAS: createSatuan(body.data), dan data.nama diambil dari body.data.nama
+		return post({
+			action: "createSatuan",
+			data: { nama: namaSatuan },
+		});
+	}
+
 	// ── TASK ─────────────────────────────────────────────────
 
 	async function getTask() {
@@ -140,7 +153,6 @@ export function useApi() {
 		return post({ action: "deleteTask", id });
 	}
 
-	// Upload foto sekaligus update status task jadi selesai
 	async function uploadFileAndCompleteTask(file, taskData) {
 		try {
 			const base64Data = await fileToBase64(file);
@@ -166,6 +178,9 @@ export function useApi() {
 		deleteLogbook,
 		uploadFileAndCreate,
 		uploadFileAndUpdate,
+		// satuan
+		getSatuan, // <--- Jangan lupa diexport
+		createSatuan, // <--- Jangan lupa diexport
 		// task
 		getTask,
 		createTask,
