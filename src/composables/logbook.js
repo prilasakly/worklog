@@ -5,14 +5,11 @@ export function useLogbookApi() {
 	const getLogbook = () => get("getLogbook");
 	const getAssigners = () => get("getAssigners");
 
-	const createLogbook = (data) =>
-		post({ action: "createLogbook", data });
+	const createLogbook = (data) => post({ action: "createLogbook", data });
 
-	const updateLogbook = (data) =>
-		post({ action: "updateLogbook", data });
+	const updateLogbook = (data) => post({ action: "updateLogbook", data });
 
-	const deleteLogbook = (id) =>
-		post({ action: "deleteLogbook", id });
+	const deleteLogbook = (id) => post({ action: "deleteLogbook", id });
 
 	const uploadFileAndCreate = async (file, logbookData) => {
 		const base64Data = await fileToBase64(file);
@@ -22,7 +19,7 @@ export function useLogbookApi() {
 			fileName: buildFileName(
 				logbookData.nama_kegiatan,
 				logbookData.tanggal,
-				file
+				file,
 			),
 			mimeType: file.type,
 			base64Data,
@@ -38,7 +35,7 @@ export function useLogbookApi() {
 			fileName: buildFileName(
 				logbookData.nama_kegiatan,
 				logbookData.tanggal,
-				file
+				file,
 			),
 			mimeType: file.type,
 			base64Data,
