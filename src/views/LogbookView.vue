@@ -679,28 +679,28 @@ function onSatuanChange(val) {
   }
 }
 
-// async function deleteLogbook() {
-//   // Guard clause: pastikan ada target yang akan dihapus
-//   if (!deleteTarget.value) return;
+async function executeDelete(){
+  // Guard clause: pastikan ada target yang akan dihapus
+  if (!deleteTarget.value) return;
 
-//   submitting.value = true;
-//   try {
-//     await deleteLogbook(deleteTarget.value.id);
+  submitting.value = true;
+  try {
+    await deleteLogbook(deleteTarget.value.id);
     
-//     // Update state lokal setelah berhasil hapus di API
-//     logbook.value = logbook.value.filter((i) => i.id !== deleteTarget.value.id);
+    // Update state lokal setelah berhasil hapus di API
+    logbook.value = logbook.value.filter((i) => i.id !== deleteTarget.value.id);
     
-//     showDeleteModal.value = false;
-//     showToast("Kegiatan berhasil dihapus", "success");
+    showDeleteModal.value = false;
+    showToast("Kegiatan berhasil dihapus", "success");
     
-//     // Reset target delete setelah selesai
-//     deleteTarget.value = null;
-//   } catch (e) {
-//     showToast(e.message || "Gagal menghapus", "error");
-//   } finally {
-//     submitting.value = false;
-//   }
-// }
+    // Reset target delete setelah selesai
+    deleteTarget.value = null;
+  } catch (e) {
+    showToast(e.message || "Gagal menghapus", "error");
+  } finally {
+    submitting.value = false;
+  }
+}
 
 function showToast(message, type = "success") {
   toast.value = { show: true, message, type };
