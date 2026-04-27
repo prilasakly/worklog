@@ -47,12 +47,31 @@
         <option value="">Semua Tahun</option>
         <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
       </select>
+      <!-- Sort by Date -->
+      <button
+        @click="toggleSort"
+        class="inline-flex items-center gap-2 bg-[#0f172a] border border-[#334155] hover:border-sky-500/50 text-slate-300 text-sm rounded-xl px-3 py-2 outline-none transition cursor-pointer shrink-0"
+        :title="sortOrder === 'desc' ? 'Terbaru dulu' : 'Terlama dulu'"
+      >
+        <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <span class="hidden sm:inline">{{ sortOrder === 'desc' ? 'Terbaru' : 'Terlama' }}</span>
+        <svg
+          class="w-3.5 h-3.5 text-sky-400 transition-transform duration-200"
+          :class="sortOrder === 'asc' ? 'rotate-180' : ''"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
     </div>
 
     <!-- Counter -->
     <div class="flex items-center justify-between">
       <p class="text-xs text-slate-500 font-mono">
-        Menampilkan <span class="text-sky-400 font-bold">{{ filteredLogbook.length }}</span> kegiatan
+        Menampilkan <span class="text-sky-400 font-bold">{{ paginatedLogbook.length }}</span>
+        dari <span class="text-sky-400 font-bold">{{ filteredLogbook.length }}</span> kegiatan
       </p>
       <button v-if="selectedMonth || selectedYear || search" @click="resetFilter" class="text-xs text-slate-500 hover:text-slate-300 transition underline">
         Reset filter
@@ -85,7 +104,22 @@
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide w-8">#</th>
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Nama Kegiatan</th>
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Volume</th>
-            <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Tanggal</th>
+            <th
+              class="text-left text-xs font-medium px-5 py-3 uppercase tracking-wide cursor-pointer select-none group transition-colors"
+              :class="'text-sky-400'"
+              @click="toggleSort"
+            >
+              <span class="inline-flex items-center gap-1.5">
+                Tanggal
+                <svg
+                  class="w-3 h-3 transition-transform duration-200"
+                  :class="sortOrder === 'asc' ? 'rotate-180' : ''"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
+            </th>
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Pemberi Tugas</th>
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Dokumentasi</th>
             <th class="text-right text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Aksi</th>
@@ -93,11 +127,11 @@
         </thead>
         <tbody>
           <tr
-            v-for="(item, i) in filteredLogbook"
+            v-for="(item, i) in paginatedLogbook"
             :key="item.id"
             class="border-b border-[#334155]/40 hover:bg-white/[0.02] transition-colors group"
           >
-            <td class="px-5 py-3.5 text-slate-600 font-mono text-xs">{{ i + 1 }}</td>
+            <td class="px-5 py-3.5 text-slate-600 font-mono text-xs">{{ (currentPage - 1) * perPage + i + 1 }}</td>
             <td class="px-5 py-3.5 text-slate-200 font-medium max-w-[220px]">
               <span class="line-clamp-1">{{ item.nama_kegiatan }}</span>
             </td>
@@ -162,7 +196,7 @@
 
     <div v-else class="md:hidden space-y-3">
       <div
-        v-for="item in filteredLogbook"
+        v-for="item in paginatedLogbook"
         :key="item.id"
         class="bg-[#1e293b] border border-[#334155] rounded-2xl p-4 space-y-3"
       >
@@ -196,6 +230,89 @@
           </a>
         </div>
       </div>
+    </div>
+
+    <!-- ─── PAGINATION ─────────────────────────────────────────── -->
+    <div v-if="totalPages > 1" class="flex items-center justify-between gap-3 pt-1">
+      <!-- Info -->
+      <p class="text-xs text-slate-600 font-mono hidden sm:block">
+        Hal {{ currentPage }} / {{ totalPages }}
+      </p>
+
+      <!-- Controls -->
+      <div class="flex items-center gap-1 mx-auto sm:mx-0">
+        <!-- First -->
+        <button
+          @click="goToPage(1)"
+          :disabled="currentPage === 1"
+          class="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title="Halaman pertama"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          </svg>
+        </button>
+        <!-- Prev -->
+        <button
+          @click="goToPage(currentPage - 1)"
+          :disabled="currentPage === 1"
+          class="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title="Sebelumnya"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <!-- Page numbers -->
+        <template v-for="page in visiblePages" :key="page">
+          <span v-if="page === '...'" class="px-1 text-xs text-slate-600">…</span>
+          <button
+            v-else
+            @click="goToPage(page)"
+            class="w-8 h-8 rounded-lg text-xs font-medium transition"
+            :class="page === currentPage
+              ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'"
+          >
+            {{ page }}
+          </button>
+        </template>
+
+        <!-- Next -->
+        <button
+          @click="goToPage(currentPage + 1)"
+          :disabled="currentPage === totalPages"
+          class="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title="Berikutnya"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        <!-- Last -->
+        <button
+          @click="goToPage(totalPages)"
+          :disabled="currentPage === totalPages"
+          class="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title="Halaman terakhir"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Per-page selector -->
+      <select
+        v-model="perPage"
+        @change="goToPage(1)"
+        class="bg-[#0f172a] border border-[#334155] text-slate-400 text-xs rounded-lg px-2 py-1.5 outline-none focus:border-sky-500 transition cursor-pointer hidden sm:block"
+      >
+        <option :value="10">10 / hal</option>
+        <option :value="25">25 / hal</option>
+        <option :value="50">50 / hal</option>
+      </select>
     </div>
 
     <!-- ─── CREATE / EDIT MODAL ───────────────────────────────── -->
@@ -457,7 +574,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useApi } from "../composables/useApi.js";
 
 const { getLogbook, getAssigners, getSatuan, createSatuan, createLogbook, updateLogbook, deleteLogbook, uploadFileAndCreate, uploadFileAndUpdate } = useApi();
@@ -472,6 +589,11 @@ const assignersLoading = ref(true);
 const search = ref("");
 const selectedMonth = ref("");
 const selectedYear = ref("");
+const sortOrder = ref("desc"); // 'desc' = terbaru dulu, 'asc' = terlama dulu
+
+// Pagination
+const currentPage = ref(1);
+const perPage = ref(10);
 
 const showModal = ref(false);
 const isEditing = ref(false);
@@ -519,14 +641,49 @@ const years = computed(() => {
 });
 
 const filteredLogbook = computed(() => {
-  return logbook.value.filter((item) => {
+  const result = logbook.value.filter((item) => {
     const matchSearch = !search.value || item.nama_kegiatan?.toLowerCase().includes(search.value.toLowerCase()) || item.pemberi_tugas?.toLowerCase().includes(search.value.toLowerCase());
     const [y, m] = (item.tanggal || "").split("-");
     const matchMonth = !selectedMonth.value || m === selectedMonth.value;
     const matchYear = !selectedYear.value || y === String(selectedYear.value);
     return matchSearch && matchMonth && matchYear;
   });
+
+  // Sort by date
+  result.sort((a, b) => {
+    const dateA = new Date(a.tanggal || "1970-01-01");
+    const dateB = new Date(b.tanggal || "1970-01-01");
+    return sortOrder.value === "desc" ? dateB - dateA : dateA - dateB;
+  });
+
+  return result;
 });
+
+// Pagination computed
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredLogbook.value.length / perPage.value)));
+
+const paginatedLogbook = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value;
+  return filteredLogbook.value.slice(start, start + perPage.value);
+});
+
+const visiblePages = computed(() => {
+  const total = totalPages.value;
+  const cur = currentPage.value;
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = [];
+  if (cur <= 4) {
+    pages.push(1, 2, 3, 4, 5, "...", total);
+  } else if (cur >= total - 3) {
+    pages.push(1, "...", total - 4, total - 3, total - 2, total - 1, total);
+  } else {
+    pages.push(1, "...", cur - 1, cur, cur + 1, "...", total);
+  }
+  return pages;
+});
+
+// Reset ke halaman 1 saat filter berubah
+watch([search, selectedMonth, selectedYear], () => { currentPage.value = 1; });
 
 // ── Methods ──
 function formatDate(d) {
@@ -540,6 +697,18 @@ function resetFilter() {
   search.value = "";
   selectedMonth.value = "";
   selectedYear.value = "";
+  currentPage.value = 1;
+}
+
+function toggleSort() {
+  sortOrder.value = sortOrder.value === "desc" ? "asc" : "desc";
+  currentPage.value = 1;
+}
+
+function goToPage(page) {
+  if (page < 1 || page > totalPages.value) return;
+  currentPage.value = page;
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function openCreate() {
