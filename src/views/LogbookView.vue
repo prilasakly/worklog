@@ -122,6 +122,7 @@
             </th>
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Pemberi Tugas</th>
             <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Dokumentasi</th>
+            <th class="text-left text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Link Drive</th>
             <th class="text-right text-xs text-slate-500 font-medium px-5 py-3 uppercase tracking-wide">Aksi</th>
           </tr>
         </thead>
@@ -160,6 +161,20 @@
                 </svg>
                 Lihat
               </a>
+              <span v-else class="text-slate-700 text-xs">—</span>
+            </td>
+            <td class="px-5 py-3.5">
+              <button
+                v-if="item.dokumentasi_url"
+                @click="copyDriveUrl(item.dokumentasi_url)"
+                class="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-sky-400 bg-[#0f172a] border border-[#334155] hover:border-sky-500/50 px-2.5 py-1 rounded-lg transition font-mono"
+                title="Copy link drive"
+              >
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span class="max-w-[160px] truncate">{{ item.dokumentasi_url }}</span>
+              </button>
               <span v-else class="text-slate-700 text-xs">—</span>
             </td>
             <td class="px-5 py-3.5 text-right">
@@ -228,6 +243,16 @@
             </svg>
             Foto
           </a>
+          <button
+            v-if="item.dokumentasi_url"
+            @click="copyDriveUrl(item.dokumentasi_url)"
+            class="inline-flex items-center gap-1 bg-[#0f172a] text-slate-400 text-xs px-2.5 py-1 rounded-full border border-[#334155] font-mono"
+          >
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Copy link
+          </button>
         </div>
       </div>
     </div>
@@ -691,6 +716,16 @@ function formatDate(d) {
   const [y, m, day] = d.split("-");
   const monthNames = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
   return `${parseInt(day)} ${monthNames[parseInt(m) - 1]} ${y}`;
+}
+
+async function copyDriveUrl(url) {
+  if (!url) return;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast("Link drive disalin", "success");
+  } catch (e) {
+    showToast("Gagal menyalin link", "error");
+  }
 }
 
 function resetFilter() {
